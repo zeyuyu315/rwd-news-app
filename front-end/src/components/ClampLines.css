@@ -1,0 +1,13 @@
+
+.clamp-lines > span {
+    display: block;
+}
+
+.clamp-lines__button {
+    background: none;
+    border: 0;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    float: right;
+}

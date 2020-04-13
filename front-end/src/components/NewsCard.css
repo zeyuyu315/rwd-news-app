@@ -1,0 +1,49 @@
+.card-item {
+    border: 0.05rem solid #CBCBCD;
+    border-radius: 0.3rem;
+    box-shadow: 0px 5px 10px rgba(0,0,0,0.2);
+}
+
+.cards-container {
+    padding: 1rem;
+}
+
+@media only screen and (max-width: 600px) {
+    .cards-container {
+      padding-bottom: 0rem;
+    }
+}
+
+
+.card-col {
+    padding: 1rem;
+}
+
+.card-img-container {
+    border: 0.05rem solid #CBCBCD;
+    border-radius: 0.3rem;
+    padding: 0.2rem;
+}
+
+.card-txt {
+    font-weight: bold;
+    font-size: 1.2rem;
+    font-style: italic;
+}
+
+.card-section {
+    float: right;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.card-date {
+    font-style: italic;
+    float: left;
+    font-size: 0.8rem;
+}
+
+.card-description {
+    font-size: 1rem;
+    padding-bottom: 1rem;
+}
