@@ -4,6 +4,8 @@ import Spinner from './Spinner';
 import SearchCard from './SearchCard';
 import { Row } from 'react-bootstrap';
 
+const URL = "https://my-first-gcp-project-271002.appspot.com/";
+
 class SearchPage extends Component {
     static contextType = Context;
 
@@ -24,7 +26,7 @@ class SearchPage extends Component {
         } else {
             newspaper = "nytimes";
         };
-        fetch(`http://localhost:8000/${newspaper}/search/${query}`)
+        fetch(`${URL}${newspaper}/search/${query}`)
           .then(res => res.json())
           .then(
             (result) => {

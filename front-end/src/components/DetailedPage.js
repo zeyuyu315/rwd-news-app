@@ -11,6 +11,8 @@ import ReactTooltip from 'react-tooltip';
 import { ToastContainer, toast, Zoom } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const URL = "https://my-first-gcp-project-271002.appspot.com/";
+
 class DetailedPage extends Component {
     static contextType = Context;
 
@@ -32,7 +34,7 @@ class DetailedPage extends Component {
         } else {
             newspaper = "nytimes";
         };
-        fetch(`http://localhost:8000/${newspaper}/article/${id}`)
+        fetch(`${URL}${newspaper}/article/${id}`)
           .then(res => res.json())
           .then(
             (result) => {

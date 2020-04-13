@@ -3,6 +3,8 @@ import NewsCard from './NewsCard';
 import Spinner from './Spinner';
 import { Context } from './Context';
 
+const URL = "https://my-first-gcp-project-271002.appspot.com/";
+
 class CardContainerPage extends Component {
     static contextType = Context;
 
@@ -23,7 +25,7 @@ class CardContainerPage extends Component {
         } else {
             newspaper = "nytimes";
         };
-        fetch(`http://localhost:8000/${newspaper}/${section}`)
+        fetch(`${URL}${newspaper}/${section}`)
           .then(res => res.json())
           .then(
             (result) => {

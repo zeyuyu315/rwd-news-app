@@ -5,7 +5,7 @@ import './CommentBox.css';
 class CommentBox extends Component {
 
     componentDidMount() {
-        this.removeCommentBox = commentBox('5660601388892160-proj');
+        this.removeCommentBox = commentBox('5708152314003456-proj');
     }
 
     componentWillUnmount() {
