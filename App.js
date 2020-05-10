@@ -3,6 +3,7 @@ const app = express();
 const url = require('url');
 const cors = require('cors');
 const axios = require('axios');
+const googleTrends = require('google-trends-api');
 
 const defaultImageGuardian = "https://assets.guim.co.uk/images/eada8aa27c12fe2d5afa3a89d3fbae0d/fallback-logo.png";
 const defaultImageNYT = "https://upload.wikimedia.org/wikipedia/commons/0/0e/Nytimes_hq.jpg";
@@ -10,6 +11,7 @@ const guardianKey = "49eb3a87-aeba-4157-80ff-61a971410175";
 const nytimesKey = "ZUGyEz9Dc1ACeCCr4AvRGi4uElSiungB";
 const guardian = "https://content.guardianapis.com/";
 const nytimes = "https://api.nytimes.com/svc/";
+const months = ["Jan", "Feb", "Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 app.use(cors());
 
@@ -21,7 +23,7 @@ app.get('/:newspaper/:section', (req, res) => {
       url += `search?api-key=${guardianKey}&section=(sport|business|technology|politics)&show-blocks=all`;
     } else {
       let section = req.params.section;
-      if (req.params.section === "sports") {
+      if (section.toLowerCase() === "sports" || section.toLowerCase() === "sport") {
         section = "sport";
       }
       url += `${section}?api-key=${guardianKey}&show-blocks=all`;
@@ -70,7 +72,7 @@ app.get('/:newspaper/:section', (req, res) => {
       try {
         id = req.params.newspaper === "guardian" ? results[i].id : results[i].url;
         title = req.params.newspaper === "guardian" ? results[i].webTitle : results[i].title;
-        section = req.params.newspaper === "guardian" ? results[i].sectionId : results[i].section;
+        section = req.params.newspaper === "guardian" ? results[i].sectionName : results[i].section;
         date = req.params.newspaper === "guardian" ? results[i].webPublicationDate : results[i].published_date;
         date = date.slice(0, 10);
         description = req.params.newspaper === "guardian" ? results[i].blocks.body[0].bodyTextSummary : results[i].abstract;
@@ -137,7 +139,7 @@ app.get('/:newspaper/article/:id(*+)', (req, res) => {
     }
     let date = req.params.newspaper === "guardian" ? results.webPublicationDate : results.pub_date;
     date = date.slice(0, 10);
-    let section = req.params.newspaper === "guardian" ? results.sectionId : results.section_name;
+    let section = req.params.newspaper === "guardian" ? results.sectionName : results.section_name;
     let description = req.params.newspaper === "guardian" ? results.blocks.body[0].bodyTextSummary : results.abstract;
     let url = req.params.newspaper === "guardian" ? results.webUrl : results.web_url;
 
@@ -237,6 +239,268 @@ app.get('/:newspaper/search/:query(*+)', (req, res) => {
     // always executed
   });
 });
+
+app.get('/IOShomepage', (req, res) => {
+  let url = 'https://content.guardianapis.com/search?orderby=newest&show-fields=starRating,headline,thumbnail,short-url&api-key=49eb3a87-aeba-4157-80ff-61a971410175';
+  axios.get(url)
+  .then(function (response) {
+    // handle success
+    let results = response.data.response.results;
+    let selected = [];
+    for (let i = 0; i < results.length; i++) {
+      let image = results[i].fields.thumbnail ? results[i].fields.thumbnail : defaultImageGuardian
+      let title;
+      let time;
+      let section;
+      let id;
+      let url;
+      try {
+        title = results[i].webTitle
+        time = results[i].webPublicationDate
+        section = results[i].sectionName
+        id = results[i].id
+        url = results[i].webUrl
+      } catch (e) {
+        continue;
+      }
+      let current = new Date()
+      let diff = (current.getTime() - new Date(time).getTime()) / 1000
+      if (diff < 60) {
+        diff = Math.round(diff) + "s ago"
+      } else if (diff < 3600) {
+        diff = Math.round(diff/ 60) + "m ago"
+      } else {
+        diff = Math.round(diff/ (60 * 60)) + "h ago"
+      }
+      let current_datetime = new Date(time)
+      current_datetime.setHours(current_datetime.getHours() - 7)
+      time = current_datetime.getDate() + " " + months[current_datetime.getMonth()] + " " + current_datetime.getFullYear()
+      let result = {
+        image: image,
+        title: title,
+        section: section,
+        id: id,
+        time: time,
+        url: url,
+        diff: diff
+      }
+      selected.push(result);
+      if (selected.length >= 10) {
+        break;
+      }
+    }
+    res.send(selected);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+});
+
+app.get('/IOSarticle/:id(*+)', (req, res) => {
+  let id = req.params.id;
+  let url = guardian + `${id}?api-key=${guardianKey}&show-blocks=all`;
+
+  axios.get(url)
+  .then(function (response) {
+    // handle success
+    let data = response.data;
+    let results = data.response.content
+    let title = results.webTitle
+    let assets = results.blocks.main.elements[0].assets;
+    let image;
+    try {
+      image = assets[assets.length - 1].file
+    } catch(e) {
+      image = ""
+    }
+    let originalDate = results.webPublicationDate
+    let current_datetime = new Date(originalDate)
+    current_datetime.setHours(current_datetime.getHours() - 7)
+    let date = current_datetime.getDate() + " " + months[current_datetime.getMonth()] + " " + current_datetime.getFullYear()
+    let section = results.sectionName;
+    let description = ""
+    let body = results.blocks.body
+    for (let i = 0; i < body.length; i++) {
+      description += body[i].bodyHtml;
+    }
+    let url = results.webUrl;
+    let selected = {
+      title: title,
+      image: image,
+      date: date,
+      section: section,
+      description: description,
+      url: url
+    };
+    res.send(selected);
+  })
+  .catch(function (error) {
+    // handle error
+    console.log(error);
+  })
+  .then(function () {
+    // always executed
+  });
+
+  
+});
+
+app.get('/IOStrend/query/:query', (req, res) => {
+  let query = req.params.query;
+  let startDate = new Date("2019-06-01");
+  let values = [];
+  googleTrends.interestOverTime({
+    keyword: query,
+    startTime: startDate
+  })
+  .then(function(results){
+    results = JSON.parse(results)
+    timelineData = results.default.timelineData
+    for (let i = 0; i < timelineData.length; i++) {
+      values.push(timelineData[i].value[0])
+    }
+    res.send(values)
+  })
+  .catch(function(err){
+    console.error('Oh no there was an error', err);
+  });
+});
+
+app.get('/IOSsearch/IOSresults/:query(*+)', (req, res) => {
+  let query = req.params.query;
+  let url = guardian + `search?q=${query}&api-key=${guardianKey}&show-blocks=all`;
+
+  axios.get(url)
+  .then(function (response) {
+    // handle success
+    let data = response.data;
+    let results = data.response.results;
+    let selected = [];
+    for (let i = 0; i < results.length; i++) {
+      let image;
+      try {
+          let assets = results[i].blocks.main.elements[0].assets;
+          image = assets[assets.length - 1].file;
+      } catch (e) {
+        image = defaultImageGuardian;
+      }
+      let id;
+      let title;
+      let time;
+      let section;
+      let url;
+      try {
+        title = results[i].webTitle
+        time = results[i].webPublicationDate
+        section = results[i].sectionName
+        id = results[i].id
+        url = results[i].webUrl
+      } catch (e) {
+        continue;
+      }
+      let current = new Date()
+      let diff = (current.getTime() - new Date(time).getTime()) / 1000
+      if (diff < 60) {
+        diff = Math.round(diff) + "s ago"
+      } else if (diff < 3600) {
+        diff = Math.round(diff/ 60) + "m ago"
+      } else {
+        diff = Math.round(diff/ (60 * 60)) + "h ago"
+      }
+      let current_datetime = new Date(time)
+      current_datetime.setHours(current_datetime.getHours() - 7)
+      time = current_datetime.getDate() + " " + months[current_datetime.getMonth()] + " " + current_datetime.getFullYear()
+      let result = {
+        image: image,
+        title: title,
+        section: section,
+        id: id,
+        time: time,
+        url: url,
+        diff: diff
+      }
+      selected.push(result);
+      if (selected.length >= 10) {
+        break;
+      }
+    }
+    res.send(selected);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+});
+
+
+app.get('/:section', (req, res) => {
+  let url = guardian;
+  let section = req.params.section.toLowerCase()
+  if (section === "sports") {
+    section = "sport";
+  }
+  url += `${section}?api-key=${guardianKey}&show-blocks=all`;
+  axios.get(url)
+  .then(function (response) {
+    // handle success
+    let data = response.data;
+    let results = data.response.results;
+    let selected = [];
+    for (let i = 0; i < results.length; i++) {
+      let image;
+      try {
+          let assets = results[i].blocks.main.elements[0].assets;
+          image = assets[assets.length - 1].file;
+      } catch (e) {
+        image = defaultImageGuardian;
+      }
+      let id;
+      let title;
+      let time;
+      let section;
+      let url;
+      try {
+        title = results[i].webTitle
+        time = results[i].webPublicationDate
+        section = results[i].sectionName
+        id = results[i].id
+        url = results[i].webUrl
+      } catch (e) {
+        continue;
+      }
+      let current = new Date()
+      let diff = (current.getTime() - new Date(time).getTime()) / 1000
+      if (diff < 60) {
+        diff = Math.round(diff) + "s ago"
+      } else if (diff < 3600) {
+        diff = Math.round(diff/ 60) + "m ago"
+      } else {
+        diff = Math.round(diff/ (60 * 60)) + "h ago"
+      }
+      let current_datetime = new Date(time)
+      current_datetime.setHours(current_datetime.getHours() - 7)
+      time = current_datetime.getDate() + " " + months[current_datetime.getMonth()] + " " + current_datetime.getFullYear()
+      let result = {
+        image: image,
+        title: title,
+        section: section,
+        id: id,
+        time: time,
+        url: url,
+        diff: diff
+      }
+      selected.push(result);
+      if (selected.length >= 10) {
+        break;
+      }
+    }
+    res.send(selected);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+});
+
+
 
 const port = process.env.PORT || 8000;
 app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`));
